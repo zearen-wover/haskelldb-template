@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
   This provides lenses for the data types in the main module.
   It's provided separately in case one wants to avoid the Data.Lens
@@ -5,6 +6,7 @@
 -}
 module Database.HaskellDB.Template.Data.Lens where
 
+import Language.Haskell.TH
 import Data.Lens.Common
 
 import Database.HaskellDB.Template
@@ -20,7 +22,7 @@ varNameL = lens varName $
     \name names -> names{varName = name}
 
 fieldNamesL :: Lens Field Names
-fieldNamesL = lens fieldInDB $
+fieldNamesL = lens fieldNames $
     \names field -> field{fieldNames = names}
 
 fieldInDBL :: Lens Field String
@@ -28,17 +30,17 @@ fieldInDBL = lens fieldInDB $
     \inDB field -> field{fieldInDB = inDB}
 
 fieldTypeQL :: Lens Field TypeQ
-fieldTypeQL = lens fieldInDB $
+fieldTypeQL = lens fieldTypeQ $
     \typeQ field -> field{fieldTypeQ = typeQ}
 
 tableNamesL :: Lens Table Names
-tableNamesL = lens tableInDB $
+tableNamesL = lens tableNames $
     \names table -> table{tableNames = names}
 
 tableInDBL :: Lens Table String
 tableInDBL = lens tableInDB $
     \inDB table -> table{tableInDB = inDB}
 
-tableFields :: Lens Table [Field]
-tableFields = lens tableFields $
+tableFieldsL :: Lens Table [Field]
+tableFieldsL = lens tableFields $
     \fields table -> table{tableFields = fields}

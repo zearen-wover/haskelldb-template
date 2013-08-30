@@ -20,5 +20,6 @@ library
   -- other-modules:       
   build-depends:
     base ==4.6.*,
+    template-haskell ==2.8.*,
     data-lens ==2.10.*,
     haskelldb-template ==0.1.*
