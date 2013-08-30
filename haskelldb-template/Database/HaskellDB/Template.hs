@@ -9,9 +9,60 @@
 {-|
   This is a rework of the interface for Justin Bailey's
   haskelldb-th package.  It's designed to be easier to 
-  use, but allow for flexibility.
+  use, but allow for flexibility.  This is done via intermediate
+  types that can be manipulated before generating the actual
+  code.  There are lens packages to facilitate this.
+
+  Typically, it will be used simply like so
+
+  > $(genTableAndFields $ mkTable "MyDatabaseTable"
+  >   [ "Key"   .:: [t|Int]
+  >   , "User"  .:: [t|String]
+  >   , "Hash"  .:: [t|String]
+  >   ]
+  > )
+
+  which generates
+
+  > type MyDatabaseTable = Database.HaskellDB.HDBRec.RecCons Key
+  >                                                          (Database.HaskellDB.Query.Expr GHC.Types.Int)
+  >                                                          (Database.HaskellDB.HDBRec.RecCons User
+  >                                                                                             (Database.HaskellDB.Query.Expr GHC.Base.String)
+  >                                                                                             (Database.HaskellDB.HDBRec.RecCons Hash
+  >                                                                                                                                (Database.HaskellDB.Query.Expr GHC.Base.String)
+  >                                                                                                                                Database.HaskellDB.HDBRec.RecNil))
+  > myDatabaseTable :: Database.HaskellDB.Query.Table MyDatabaseTable
+  > myDatabaseTable = Database.HaskellDB.Query.baseTable "MyDatabaseTable" ((#) (Database.HaskellDB.DBLayout.hdbMakeEntry Hash) ((#) (Database.HaskellDB.DBLayout.hdbMakeEntry User) (Database.HaskellDB.DBLayout.hdbMakeEntry Key)))
+  > data Key = Key
+  > instance Database.HaskellDB.HDBRec.FieldTag Key
+  >     where Database.HaskellDB.HDBRec.fieldName _ = "Key"
+  > key :: Database.HaskellDB.Query.Attr Key GHC.Types.Int
+  > key = Database.HaskellDB.DBLayout.mkAttr Key
+  > data User = User
+  > instance Database.HaskellDB.HDBRec.FieldTag User
+  >     where Database.HaskellDB.HDBRec.fieldName _ = "User"
+  > user :: Database.HaskellDB.Query.Attr User GHC.Base.String
+  > user = Database.HaskellDB.DBLayout.mkAttr User
+  > data Hash = Hash
+  > instance Database.HaskellDB.HDBRec.FieldTag Hash
+  >     where Database.HaskellDB.HDBRec.fieldName _ = "Hash"
+  > hash :: Database.HaskellDB.Query.Attr Hash GHC.Base.String
+  > hash = Database.HaskellDB.DBLayout.mkAttr Hash
+
+  It's that easy.
 -}
-module Database.HaskellDB.Template where
+module Database.HaskellDB.Template 
+    ( Names (..)
+    , Field (..)
+    , Table (..)
+    , mkNames
+    , (.::)
+    , mkField
+    , mkTable
+    , genField
+    , genTable
+    , genTableAndFields
+    ) where
 
 import           Language.Haskell.TH
 import           Control.Monad
@@ -39,6 +90,10 @@ data Table = Table
     , tableFields :: [Field]
     }
 
+{-|
+  This will create a type and variable from a given string that are identical
+  save for being properly captalized.
+-}
 mkNames :: String -> Names
 mkNames "" = error "Database.HaskellDB.Template: Empty names passed to mkNames"
 mkNames (c:cs) = Names
@@ -64,7 +119,7 @@ infix 1 .::
 
 {-| 
   A shortcut function to build a 'Table' from just a name
-  and a list of 'Field's.  To for more complicated needs, use the
+  and a list of 'Field's.  For more complicated needs, use the
   type constructor.
 -}
 mkTable :: String -> [Field] -> Table
@@ -95,7 +150,7 @@ genField field = do
         fieldName = varName $ fieldNames field
 
 {-|
-  Generates a table declaration from a 'Field' type
+  Generates a table declaration from a 'Table' type
 -}
 genTable :: Table -> Q [Dec]
 genTable table = do
@@ -124,6 +179,9 @@ genTable table = do
                 ]
             
 
+{-|
+  Generates both a table and all its fields from a single Table type.
+-}
 genTableAndFields :: Table -> Q [Dec]
 genTableAndFields table = do
     tableDecl <- genTable table
