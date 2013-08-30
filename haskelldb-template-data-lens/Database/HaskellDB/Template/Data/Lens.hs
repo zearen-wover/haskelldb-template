@@ -3,7 +3,7 @@
   It's provided separately in case one wants to avoid the Data.Lens
   dependency
 -}
-module Database.HaskellDB.Template.Lens where
+module Database.HaskellDB.Template.Data.Lens where
 
 import Data.Lens.Common
 
